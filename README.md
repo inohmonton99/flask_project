@@ -20,12 +20,6 @@ Use a production WSGI server instead.
 
 ```
 ```bash
-curl http://localhost:5000/file -d "filename=test" -X PUT
-
-curl http://localhost:5000/
-{
-    "filename": "test"
-}
-
-
+curl http://localhost:5000/file -d "filename=test_video.mp4" -X PUT
+curl http://localhost:5000/file
 ```
