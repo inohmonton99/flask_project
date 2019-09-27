@@ -1,8 +1,9 @@
 # http://flask.pocoo.org/docs/patterns/fileuploads/
 import os
-from flask import Flask, flash, request, redirect, url_for, send_from_directory, render_template
-from werkzeug.utils import secure_filename
+
+from flask import Flask, flash, request, redirect, url_for, render_template
 from flask_restful import Resource, Api
+from werkzeug.utils import secure_filename
 
 UPLOAD_FOLDER = 'uploads'
 
@@ -27,14 +28,23 @@ def allowed_file(filename):
 
 
 class TodoSimple(Resource):
-    def put(self, todo_id):
-        file_curl[todo_id] = request.form['filename']
-        return {todo_id: file_curl[todo_id]}
+    # input filename to upload
+    def put(self, file):
+        file_curl[file] = request.form['filename']
+        return file_curl[file]
 
-    def get(self, todo_id):
-        # TODO: load dict file as var=filename
-        # TODO: process upload with set filename
-        return {todo_id: file_curl[todo_id]}
+    # process uploading for filename
+    def get(self, file):
+        filename = file_curl[file]
+        filename_dir = os.path.abspath(filename)
+        if os.path.isfile(filename):
+            if file and allowed_file(filename):
+                filename = secure_filename(filename_dir)
+                # TODO: need to convert string file to file object
+                try:
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                except AttributeError:
+                    return "file type not accepted"
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -43,7 +53,7 @@ def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
-            flash('No file part')
+            flash('No file')
             return redirect(request.url)
         file = request.files['file']
         # if user does not select file, browser also
@@ -70,16 +80,20 @@ def upload_file():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+    return '''
+    <!doctype html>
+        <title>Upload new File</title>
+        <h1>File Successfully Uploaded</h1>
+        <a href="/" class="previous">Previous</a>      
+    '''
 
 
 @app.errorhandler(404)
 def not_found(error):
-    return render_template('error.html'), 404
+    return render_template('/static/error.html'), 404
 
 
-api.add_resource(TodoSimple, '/<string:todo_id>')
+api.add_resource(TodoSimple, '/<file>')
 
 if __name__ == '__main__':
     app.run(debug=True)
